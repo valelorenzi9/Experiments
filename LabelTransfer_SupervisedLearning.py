@@ -93,13 +93,14 @@ print('''
 #################
 ''')
 
+
 # Load dataset we want to transfer label from
 adata_from = sc.read(args.adata_from[0])
 print("adata_from dims: {}".format(adata_from.shape))
 
-# Load dataset we want to transfer label to 
+# Load dataset we want to transfer label to
 adata_to = sc.read(args.adata_to[0])
-print("adata_to dims: {}".format(adata_to.shape))
+print("adata_to dims: {}".format(adata_to.shape))   
 
 # Re-set to raw data if needed 
 def reset_raw(adata):
