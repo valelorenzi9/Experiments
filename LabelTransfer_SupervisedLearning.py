@@ -384,7 +384,7 @@ plt.tight_layout()
 plt.title('Confusion matrix', y=1.1)
 plt.ylabel('Actual label')
 plt.xlabel('Predicted label')
-
+plt.savefig(args.outdir[0] + 'confusion_matrix.png', bbox_inches='tight')
 
 
 print('''
