@@ -73,7 +73,7 @@ parser.add_argument('-n', '--n-hvgs', type=int, help='Number of highly variable 
 parser.add_argument('-d', '--downsample', type=int, help='Maximum number of instances per class. If a class has more instances than the specified number, it will be downsampled.', default=0)
 
 # weights (adjust class weights for unbalanced dataset)
-parser.add_argument('-w', '--weights', type=str, nargs='+', help='Boolean value specifying whether or not to run the supervised learning algorithm with class weights. If True, applies smoothing weights to increase the power of minority classes and reduce power of majority classes.', default = True)
+parser.add_argument('-w', '--weights', type=str, nargs='+', help='Boolean value specifying whether or not to run the supervised learning algorithm with class weights. If True, applies smoothing weights to increase the power of minority classes and reduce power of majority classes.', default=True)
 
 # labels
 parser.add_argument('-l', '--labels', type=str, nargs='+', help='Name of the column in the metadata of the anndata specified in --from that contains the labels we wish to transfer to the anndata in --to.', required=True)
@@ -107,7 +107,7 @@ def reset_raw(adata):
     adata = anndata.AnnData(X = adata.raw.X, var = adata.raw.var, obs = adata.obs)
     return adata
 
-if args.is_raw[0] != True:
+if args.is_raw[0] != 'True':
     adata_from = reset_raw(adata_from)
     adata_to = reset_raw(adata_to)
     print('Datasets have been reset to raw counts.')
@@ -262,13 +262,16 @@ for i in y_train:
 print(labels_dict)
 weights = class_weight(labels_dict)
 
-
+print(args.weights)
+print(args.weights[0])
 if args.model[0] == 'SVM':
+    print('Training a Support Vector Machine multiclass classifier')
     # Instantiate an RBF Support Vector Machine
-    if args.weights == True:
+    if args.weights[0] == 'True':
         print("Applying smoothing class weights")
         svm = SVC(kernel = "rbf", probability = True, class_weight = weights)
-    else: 
+    else:
+        print("NOT applying smoothing class weights")
         svm = SVC(kernel = "rbf", probability = True, class_weight = None)
 
     # Instantiate a PCA 
@@ -293,6 +296,7 @@ if args.model[0] == 'SVM':
     print("Best Support Vectore Machine CV accuracy", grid.best_score_)
     
 elif args.model[0] == 'LR':
+    print('Training a Logistic Regression multiclass classifier')
     # Instantiate a Logistic Regression Classifier and specify L2 regularization
     if args.weights == True:
         print("Applying smoothing class weights")
@@ -326,6 +330,7 @@ elif args.model[0] == 'LR':
     print("Softmax test accuracy:", grid.score(X_test, y_test))
 
 elif args.model[0] == 'RF':
+    print('Training a Random Forest multiclass classifier')
     # Instantiate a Random Forest Classifier 
     if args.weights == True:
         print("Applying smoothing class weights")
