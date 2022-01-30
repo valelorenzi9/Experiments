@@ -1,3 +1,4 @@
+
 ###################
 # Import packages #
 ###################
@@ -39,15 +40,22 @@ object_name <- args$object_name
 
 outdir <- args$outdir
 
+print("Selected arguments: ")
+print(paste0("Seurat Object: ", seurat_object))
+print(paste0("Object name: ", object_name))
+print(paste0("Outdir: ", outdir))
+
 ####################################
 # Convert Seurat object to Anndata #
 ####################################
 
 # Load Seurat object
 SeuratObject <- readRDS(file = seurat_object)
+print("Seurat object loaded") 
 
 # Save intermediate format (h5Seurat)
 SaveH5Seurat(SeuratObject, filename = paste0(outdir, object_name, ".h5Seurat"))
+print("Seurat object saved as .h5seurat")
 
 # Convert and save to h5ad file 
 Convert(paste0(outdir, object_name, ".h5Seurat"), dest = "h5ad")
