@@ -28,11 +28,16 @@ parser$add_argument("--object_name",
                     type="character",
                     help = "Name of the saved object")
 
+parser$add_argument("--outdir", type = "character", 
+		    help = "Path to where you want to store the resulting Anndata object")
+
 args <- parser$parse_args()
 
 seurat_object <- args$seurat_object
 
 object_name <- args$object_name
+
+outdir <- args$outdir
 
 ####################################
 # Convert Seurat object to Anndata #
@@ -42,9 +47,9 @@ object_name <- args$object_name
 SeuratObject <- readRDS(file = seurat_object)
 
 # Save intermediate format (h5Seurat)
-SaveH5Seurat(SeuratObject, filename = paste0(object_name, ".h5Seurat"))
+SaveH5Seurat(SeuratObject, filename = paste0(outdir, object_name, ".h5Seurat"))
 
 # Convert and save to h5ad file 
-Convert(paste0(object_name, ".h5Seurat"), dest = "h5ad")
+Convert(paste0(outdir, object_name, ".h5Seurat"), dest = "h5ad")
 
 print("Seurat object was successfully converted to Anndata")
