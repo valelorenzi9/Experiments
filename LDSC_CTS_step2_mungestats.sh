@@ -31,7 +31,9 @@ set -e
 source /home/jovyan/my-conda-envs/ldsc/bin/activate 
 
 # Convert GWAS summary statistics to .sumstats format by using munge_sumstats.py script and keeping only SNPs that are listed in the HapMap3 project
+# ! Though not mentioned in the tutorial, it's important to reduce the chunk size otherwise it takes ages to run: by default chunksize = 5000000
 python /home/jovyan/ldsc/munge_sumstats.py \
 --sumstats $outdir/$gwas.sumstats.gz \
 --merge-alleles $outdir/w_hm3.snplist \
 --out $gwas
+--chunksize 500000
