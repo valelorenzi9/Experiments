@@ -80,6 +80,6 @@ for idx in range(len(cell_types)):
     cell_type = cell_types[idx]
     print("Saving bed files for cell type: {}".format(cell_type))
     bed_df = bed_df_list[idx]
-    pybedtools.BedTool.from_dataframe(bed_df, outfile = outdir + cell_type + ".bed", index = False, sep = '\t') 
+    pybedtools.BedTool.from_dataframe(bed_df, outfile = args.outdir + cell_type + ".bed", index = False, sep = '\t') 
 
 
