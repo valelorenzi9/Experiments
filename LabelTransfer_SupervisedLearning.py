@@ -2,20 +2,17 @@
 ####################
 # Import libraries #
 ####################
+import pip
 
-import numpy as np
-import pandas as pd
-import scanpy as sc
-import anndata
-import matplotlib.pyplot as plt
-import random
-from itertools import chain
-import sys
-import scipy
-import os
-import datetime
-import argparse
-import warnings
+def import_or_install(package):
+    try:
+        __import__(package)
+    except ImportError:
+        pip.main(['install', package])   
+
+required_packages = ['numpy', 'pandas', 'scanpy', 'anndata', 'matplotlib.pyplot', 'itertools', 'random', 'sys', 'os', 'datetime', 'argparse', 'warnings', 'sklearn', 'functools']
+for p in required_packages:
+    import_or_install(p) 
 
 #######################
 # Import ML libraries #
@@ -44,6 +41,7 @@ from os import path
 
 sc.settings.verbosity = 3  # verbosity: errors (0), warnings (1), info (2), hints (3)
 
+from itertools import chain
 
 ##################################
 # Define command line parameters #
@@ -95,11 +93,11 @@ print('''
 
 
 # Load dataset we want to transfer label from
-adata_from = sc.read(args.adata_from[0])
+adata_from = scanpy.read(args.adata_from[0])
 print("adata_from dims: {}".format(adata_from.shape))
 
 # Load dataset we want to transfer label to
-adata_to = sc.read(args.adata_to[0])
+adata_to = scanpy.read(args.adata_to[0])
 print("adata_to dims: {}".format(adata_to.shape))   
 
 # Re-set to raw data if needed 
@@ -124,7 +122,7 @@ def downsample(adata, labels):
     
     myindex = adata.obs[labels].value_counts().index 
     myvalues = adata.obs[labels].value_counts().values
-    clusters = pd.Series(myvalues, index = myindex)
+    clusters = pandas.Series(myvalues, index = myindex)
     
     # Find clusters with > n cells (n is user-defined and specified by the argument --downsample)
     n = eu(args.downsample)
@@ -166,7 +164,7 @@ adata_from_genes = adata_from.var_names.to_list()
 adata_to_genes = adata_to.var_names.to_list()
 
 from functools import reduce
-inters = reduce(np.intersect1d, (adata_from_genes, adata_to_genes))
+inters = reduce(numpy.intersect1d, (adata_from_genes, adata_to_genes))
 print('There are {} genes that are shared between the two datasets (before removing cell cycle-associated genes)'.format(len(inters)))
 
 print('''
@@ -190,29 +188,29 @@ print('''
 
 def preprocessing_training(adata, hvgs):
     # Per cell normalization
-    sc.pp.normalize_per_cell(adata, counts_per_cell_after=1e4)
+    scanpy.pp.normalize_per_cell(adata, counts_per_cell_after=1e4)
     # Log transformation 
-    sc.pp.log1p(adata)
+    scanpy.pp.log1p(adata)
     # Filter HVGs --> Select top N highly variable genes that will serve as features to the machine learning models  
-    sc.pp.highly_variable_genes(adata, n_top_genes = hvgs)
+    scanpy.pp.highly_variable_genes(adata, n_top_genes = hvgs)
     highly_variable_genes = adata.var["highly_variable"]
     adata = adata[:, highly_variable_genes]
     # Scale
-    sc.pp.scale(adata, max_value=10)
+    scanpy.pp.scale(adata, max_value=10)
     return adata
 
 def preprocessing_testing(adata, hvgs): 
     # Per cell normalization
-    sc.pp.normalize_per_cell(adata, counts_per_cell_after=1e4)
+    scanpy.pp.normalize_per_cell(adata, counts_per_cell_after=1e4)
     # Log transformation 
-    sc.pp.log1p(adata)
+    scanpy.pp.log1p(adata)
     # Use the HVGs that were selected for the training set 
     adata = adata[:, hvgs]
     # Scale
-    sc.pp.scale(adata, max_value=10)
+    scanpy.pp.scale(adata, max_value=10)
     return adata
 
-X_df = pd.DataFrame(adata_from.X.toarray(), index = adata_from.obs_names, columns = adata_from.var_names)  # Fetching the count matrix to use as input to the model 
+X_df = pandas.DataFrame(adata_from.X.toarray(), index = adata_from.obs_names, columns = adata_from.var_names)  # Fetching the count matrix to use as input to the model 
 print(type(X_df), X_df.shape)
 
 # Labels we want to predict 
@@ -245,13 +243,13 @@ print('''
 
 # Compute smoothing class weights 
 def class_weight(labels_dict,mu=0.15):
-    total = np.sum(list(labels_dict.values()))
+    total = numpy.sum(list(labels_dict.values()))
     keys = labels_dict.keys()
     weight = {}
     print(total)
 
     for i in keys:
-        score = np.log(mu*total/float(labels_dict[i]))
+        score = numpy.log(mu*total/float(labels_dict[i]))
         weight[i] = score if score > 1 else 1
     return weight
 
@@ -375,22 +373,20 @@ print(report)
 
 # Confusion matrix 
 cnf_matrix = confusion_matrix(y_test, predicted_labels)
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 class_names=[0,1] # name  of classes
-fig, ax = plt.subplots()
-tick_marks = np.arange(len(class_names))
-plt.xticks(tick_marks, class_names)
-plt.yticks(tick_marks, class_names)
+fig, ax = matplotlib.pyplot.subplots()
+tick_marks = numpy.arange(len(class_names))
+matplotlib.pyplot.xticks(tick_marks, class_names)
+matplotlib.pyplot.yticks(tick_marks, class_names)
 # create heatmap
-sns.heatmap(pd.DataFrame(cnf_matrix), annot=True, cmap="YlGnBu" ,fmt='g')
+seaborn.heatmap(pandas.DataFrame(cnf_matrix), annot=True, cmap="YlGnBu" ,fmt='g')
 ax.xaxis.set_label_position("top")
-plt.tight_layout()
-plt.title('Confusion matrix', y=1.1)
-plt.ylabel('Actual label')
-plt.xlabel('Predicted label')
-plt.savefig(args.outdir[0] + 'confusion_matrix.png', bbox_inches='tight')
+matplotlib.pyplot.tight_layout()
+matplotlib.pyplot.title('Confusion matrix', y=1.1)
+matplotlib.pyplot.ylabel('Actual label')
+matplotlib.pyplot.xlabel('Predicted label')
+matplotlib.pyplot.savefig(args.outdir[0] + 'confusion_matrix.png', bbox_inches='tight')
 
 
 print('''
@@ -405,19 +401,19 @@ def process_and_subset_data(adata, genes):
     # save the log transformed counts as raw 
     adata.raw = adata.copy()
     # Per cell normalization
-    sc.pp.normalize_per_cell(adata, counts_per_cell_after=1e4)
+    scanpy.pp.normalize_per_cell(adata, counts_per_cell_after=1e4)
     # Log transformation 
-    sc.pp.log1p(adata)
+    scanpy.pp.log1p(adata)
     # Subset data
     adata = adata[:, list(genes)]
     # Scale
-    sc.pp.scale(adata, max_value=10)
+    scanpy.pp.scale(adata, max_value=10)
     return adata
 
 def make_single_predictions(adata, classifier): 
     #if scipy.sparse.issparse(adata.X):
         #adata.X = adata.X.toarray()
-    adata_X = np.array(adata.X)
+    adata_X = numpy.array(adata.X)
     print(type(adata_X), adata_X.shape)
     adata_preds = classifier.predict(adata_X)
     adata.obs['classifier'] = adata_preds
@@ -433,7 +429,7 @@ def make_probability_predictions(adata, classifier):
     adata_X = np.array(adata.X)
     print(type(adata_X), adata_X.shape)
     proba_preds = classifier.predict_proba(adata_X)
-    df_probs = pd.DataFrame(np.column_stack(list(zip(*proba_preds))))
+    df_probs = pandas.DataFrame(np.column_stack(list(zip(*proba_preds))))
     corr = make_correspondence(classifier)
     for index in df_probs.columns.values:
         celltype = corr[index]
