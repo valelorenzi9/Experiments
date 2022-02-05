@@ -11,38 +11,36 @@ import sys
 import scipy
 import matplotlib as mpl
 mpl.rcParams['pdf.fonttype'] = 42
-from matplotlib.backends.backend_pdf import PdfPages
 
-# Function to make diagnostics plots to evaluate the quality of the sample
+import seaborn as sns
+
+# Function to plot QC metrics on a per-sample basis 
 def qc_plots_sample(adata, sample, outdir):
     plt.tight_layout()
+    
+    # Set multi-panel figure
+    f, axs = plt.subplots(2, 3, figsize=(14, 9))
 
     # Violin plot of n_genes, n_counts and percent_mito
-    fig1 = sc.pl.violin(adata, ['n_genes', 'n_counts', 'percent_mito'], multi_panel=True, jitter = 0.4, show = False)
-    plt.savefig(outdir + sample + '_qc_violin.pdf', dpi = 300)
+    v1 = sc.pl.violin(adata, ['n_genes'], show = False, ax=axs[0][0])
+    v1.set_title('n_genes violin plot')
+    v2 = sc.pl.violin(adata, ['n_counts'], show = False, ax=axs[0][1])
+    v2.set_title('n_counts violin plot')
+    v3 = sc.pl.violin(adata, ['percent_mito'], show = False, ax=axs[0][2])
+    v3.set_title('percent_mito violin plot')
 
     # Scatterplots of n_counts vs n_genes and n_counts vs percent_mito
-    fig2 = sc.pl.scatter(adata, x='n_counts', y='percent_mito', show = False)
-    plt.savefig(outdir + sample + '_qc_scatter1.pdf', dpi = 300)
-    fig3 = sc.pl.scatter(adata, x='n_counts', y='n_genes', show = False)
-    plt.savefig(outdir + sample + '_qc_scatter2.pdf', dpi = 300)
-    
+    sc.pl.scatter(adata, x='n_counts', y='percent_mito', show = False, title = 'n_counts vs percent_mito scatterplot', ax=axs[1][0])
+    sc.pl.scatter(adata, x='n_counts', y='n_genes', show = False, title = 'n_counts vs n_genes scatterplot', ax=axs[1][1])
     
     # Histograms of n_genes and percent_mito
-    histogram = plt.figure()
-    axis1 = histogram.add_subplot(211)
-    axis1.hist(adata.obs['n_genes'], bins = 100)
-    axis1.axvline(1000, linestyle = '--', color = 'red')
+    sns.histplot(adata.obs['n_genes'], bins = 100, kde=True, ax=axs[1][2])
+    plt.axvline(1500, linestyle = '--', color = 'red')
+    plt.axvline(8000, linestyle = '--', color = 'green')
+    plt.title('n_genes histogram')
     
-    axis2 = histogram.add_subplot(212)
-    axis2.hist(adata.obs['percent_mito'], bins = 100, cumulative=True)
-    axis2.axvline(0.1, linestyle = '--', color = 'red')
-    axis2.axvline(0.2, linestyle = '--', color = 'darkred')
-    axis2.axhline(adata.n_obs*0.99, linestyle = '-', color = 'green')
-
-    plt.tight_layout()
-    histogram.savefig(outdir + sample + '_qc_histograms.pdf', dpi = 300)
-
+    f.tight_layout()
+    f.savefig(outdir + sample + '_qc_plots.pdf')
 
 # Function to run gene centric analysis to identify genes that behave like known cell cycle genes 
 def per_gene_analysis(adata):
