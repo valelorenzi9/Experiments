@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 ####################
 # Import libraries #
@@ -76,6 +77,12 @@ parser.add_argument('-w', '--weights', type=str, nargs='+', help='Boolean value 
 # labels
 parser.add_argument('-l', '--labels', type=str, nargs='+', help='Name of the column in the metadata of the anndata specified in --from that contains the labels we wish to transfer to the anndata in --to.', required=True)
 
+# dataframe of converted genes from mouse (if present) 
+parser.add_argument('-cg', '--converted-genes', type=str, nargs='+', help='Path to dataframe containing gene ids converted from mouse to human (if present). This can be the output of the script CrossSpecies_Biomart.R.', default=argparse.SUPPRESS)
+
+# is mouse (if present)
+parser.add_argument('-im', '--is-mouse', type=str, nargs='+', help='Path to mouse dataset for which we need to convert gene IDs to human', default=argparse.SUPPRESS)
+
 args = parser.parse_args()
 
 
@@ -111,6 +118,32 @@ if args.is_raw[0] != 'True':
     print('Datasets have been reset to raw counts.')
 else: 
     print('Datasets have not been reset to raw counts as the user has not specified the need for it.')
+
+
+###########################################################
+# Load converted genes from mouse to human (if necessary) #
+###########################################################
+
+if converted_genes in args: 
+    print('Mapping mouse genes to human genes') 
+    df_genes = pd.read_csv(args.converted_genes[0])
+    dict_genes = pd.Series(df_genes['hsapiens_homolog_associated_gene_name'].values, index=df_genes['external_gene_name']).to_dict()
+    if is_mouse in args: 
+        if args.adata_from[0] == args.is_mouse[0]:
+            print('The mouse dataset is the one you wish to transfer labels FROM')
+            adata_from.var['human_ids'] = adata_from.var_names.map(dict_genes)
+            adata_from.var_names = adata_from.var['human_ids']
+        elif args.adata_to[0] == args.is_mouse[0]:
+            print('The mouse dataset is the one you wish to transfer labels TO')
+            adata_to.var['human_ids'] = adata_to.var_names.map(dict_genes)
+            adata_to.var_names = adata_to.var['human_ids']
+        else: 
+            print('The mouse dataset does not coincide with either the dataset you wish to transfer labels FROM nor TO')
+    else: 
+        print('Please provide a path to the mouse dataset')
+else: 
+    print('No mouse dataset, no gene conversion needed') 
+
 
 
 ##############
