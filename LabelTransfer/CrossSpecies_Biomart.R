@@ -59,7 +59,6 @@ df_genes <- getBM(mart = ensembl,
 
 # Filter for one2one orthologs across species 
 df_genes <- df_genes %>% filter(hsapiens_homolog_orthology_type == "ortholog_one2one") 
-df_genes <- df_genes[, c("hsapiens_homolog_ensembl_gene", "hsapiens_homolog_associated_gene_name")]
 
 # Save datafram to .csv file 
 write.csv(df_genes, paste0(outdir, "human_converted_ids.csv"), row.names = FALSE)
