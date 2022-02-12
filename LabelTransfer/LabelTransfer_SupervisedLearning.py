@@ -3,17 +3,21 @@
 ####################
 # Import libraries #
 ####################
-import pip
 
-def import_or_install(package):
-    try:
-        __import__(package)
-    except ImportError:
-        pip.main(['install', package])   
-
-required_packages = ['numpy', 'pandas', 'scanpy', 'anndata', 'matplotlib.pyplot', 'itertools', 'random', 'sys', 'os', 'datetime', 'argparse', 'warnings', 'sklearn', 'functools']
-for p in required_packages:
-    import_or_install(p) 
+import os 
+import sys
+import datetime
+import numpy
+import pandas
+import scanpy 
+import anndata
+import scipy 
+import matplotlib.pyplot
+import functools
+import random
+import itertools
+import warnings
+import argparse
 
 #######################
 # Import ML libraries #
@@ -40,7 +44,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from os.path import expanduser as eu
 from os import path
 
-sc.settings.verbosity = 3  # verbosity: errors (0), warnings (1), info (2), hints (3)
+scanpy.settings.verbosity = 3  # verbosity: errors (0), warnings (1), info (2), hints (3)
 
 from itertools import chain
 
@@ -126,8 +130,8 @@ else:
 
 if converted_genes in args: 
     print('Mapping mouse genes to human genes') 
-    df_genes = pd.read_csv(args.converted_genes[0])
-    dict_genes = pd.Series(df_genes['hsapiens_homolog_associated_gene_name'].values, index=df_genes['external_gene_name']).to_dict()
+    df_genes = pandas.read_csv(args.converted_genes[0])
+    dict_genes = pandas.Series(df_genes['hsapiens_homolog_associated_gene_name'].values, index=df_genes['external_gene_name']).to_dict()
     if is_mouse in args: 
         if args.adata_from[0] == args.is_mouse[0]:
             print('The mouse dataset is the one you wish to transfer labels FROM')

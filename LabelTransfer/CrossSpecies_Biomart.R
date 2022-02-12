@@ -63,3 +63,4 @@ df_genes <- df_genes %>% filter(hsapiens_homolog_orthology_type == "ortholog_one
 # Save datafram to .csv file 
 write.csv(df_genes, paste0(outdir, "human_converted_ids.csv"), row.names = FALSE)
 
+print(paste0('Mouse gene IDs have been successfully converted to human and saved :', outdir, 'human_converted_ids.csv'))
