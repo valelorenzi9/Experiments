@@ -27,4 +27,4 @@ Parameters:
  * --labels (-l) : Name of the column in the metadata of the anndata specified in --adata-from that contains the labels we wish to transfer to the anndata in --adata-to. (string)
  * --outdir (-o) : Path where the supervised model predictions on the target dataset are saved. (string)
 
-The script requires the python libraries specified in requirements.txt. If you would like to install them use pip install -r requirements.txt
+The script requires the python libraries specified in **requirements.txt**. If you would like to install them use pip install -r requirements.txt
