@@ -1,20 +1,20 @@
-#### 1: Converting single-cell dataset formats 
-Seurat2Anndata.R
+### 1: Converting single-cell dataset formats 
+**Seurat2Anndata.R**
 
 Parameters: 
  * --seurat_object : Path to Seurat object you wish to convert to Anndata (string)
  * --object_name : Name of the saved object (string)
  * --outdir : Path to where you want to store the resulting Anndata object (string) 
 
-#### 2: Converting gene IDs across species (mouse to human only for now)
-CrossSpecies_Biomart.R
+### 2: Converting gene IDs across species (mouse to human only for now)
+**CrossSpecies_Biomart.R**
 
 Parameters: 
  * --genes: Path to txt file with mouse ENSEMBL gene IDs you wish to convert to human (string)
  * --outdir: Path to where you want to store the resulting converted human ENSEMBL IDs and gene names (string)
 
-#### 3: Transfering labels between single-cell datasets with supervised machine learning algorithms 
-LabelTransfer_SupervisedLearning.py 
+### 3: Transfering labels between single-cell datasets with supervised machine learning algorithms 
+**LabelTransfer_SupervisedLearning.py** 
 
 Parameters: 
  * --adata-from (-f) : Path to dataset we want to transfer labels from. This must be an anndata object with rows as cells and genes as columns. (string)
