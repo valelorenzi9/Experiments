@@ -12,3 +12,4 @@ anndata
 matplotlib.pyplot
 itertools
 random
+scipy
