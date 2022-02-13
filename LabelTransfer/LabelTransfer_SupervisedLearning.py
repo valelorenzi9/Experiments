@@ -18,6 +18,7 @@ import random
 import itertools
 import warnings
 import argparse
+import seaborn
 
 #######################
 # Import ML libraries #
@@ -128,18 +129,39 @@ else:
 # Load converted genes from mouse to human (if necessary) #
 ###########################################################
 
-if converted_genes in args: 
-    print('Mapping mouse genes to human genes') 
+if not args.converted_genes is None: 
+    print('''
+    ######################################
+    # Mapping mouse genes to human genes #
+    ######################################
+    ''') 
     df_genes = pandas.read_csv(args.converted_genes[0])
+    df_genes = df_genes.dropna()
+    df_genes = df_genes.drop_duplicates(['hsapiens_homolog_associated_gene_name'])
+    df_genes = df_genes.drop_duplicates(['external_gene_name'])
     dict_genes = pandas.Series(df_genes['hsapiens_homolog_associated_gene_name'].values, index=df_genes['external_gene_name']).to_dict()
-    if is_mouse in args: 
+    print(len(dict_genes))
+    if not args.is_mouse is None: 
         if args.adata_from[0] == args.is_mouse[0]:
-            print('The mouse dataset is the one you wish to transfer labels FROM')
-            adata_from.var['human_ids'] = adata_from.var_names.map(dict_genes)
+            print('\nThe mouse dataset is the one you wish to transfer labels FROM\n')
+            var_names = adata_from.var_names.to_list()
+            df_genes = df_genes[df_genes['external_gene_name'].isin(var_names)]
+            df_genes = df_genes.set_index('external_gene_name')
+            gene_mapping = df_genes['hsapiens_homolog_associated_gene_name'].to_dict() # mouse gene name to human gene name
+            tokeep = df_genes.index.to_list()
+            adata_from = adata_from[:, tokeep]
+            adata_from.var['human_ids'] = adata_from.var_names.map(gene_mapping)
             adata_from.var_names = adata_from.var['human_ids']
+            # adata_from.make_var_names_unique()
         elif args.adata_to[0] == args.is_mouse[0]:
-            print('The mouse dataset is the one you wish to transfer labels TO')
-            adata_to.var['human_ids'] = adata_to.var_names.map(dict_genes)
+            print('\nThe mouse dataset is the one you wish to transfer labels TO\n')
+            var_names = adata_to.var_names.to_list()
+            df_genes = df_genes[df_genes['external_gene_name'].isin(var_names)]
+            df_genes = df_genes.set_index('external_gene_name')
+            gene_mapping = df_genes['hsapiens_homolog_associated_gene_name'].to_dict() # mouse gene name to human gene name
+            tokeep = df_genes.index.to_list()
+            adata_to = adata_to[:, tokeep]
+            adata_to.var['human_ids'] = adata_to.var_names.map(gene_mapping)
             adata_to.var_names = adata_to.var['human_ids']
         else: 
             print('The mouse dataset does not coincide with either the dataset you wish to transfer labels FROM nor TO')
@@ -252,7 +274,7 @@ print(type(X_df), X_df.shape)
 
 # Labels we want to predict 
 y = list(adata_from.obs[args.labels[0]].astype('str'))
-print('List of unique labels we wish to transfer: {}'.format(np.unique(y)))
+print('List of unique labels we wish to transfer: {}'.format(numpy.unique(y)))
 
 # Split the training dataset into train and test sets 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -297,12 +319,10 @@ for i in y_train:
 print(labels_dict)
 weights = class_weight(labels_dict)
 
-print(args.weights)
-print(args.weights[0])
 if args.model[0] == 'SVM':
     print('Training a Support Vector Machine multiclass classifier')
     # Instantiate an RBF Support Vector Machine
-    if args.weights[0] == 'True':
+    if args.weights == True:
         print("Applying smoothing class weights")
         svm = SVC(kernel = "rbf", probability = True, class_weight = weights)
     else:
@@ -463,10 +483,10 @@ def make_correspondence(classifier):
     return corr
 
 def make_probability_predictions(adata, classifier):
-    adata_X = np.array(adata.X)
+    adata_X = numpy.array(adata.X)
     print(type(adata_X), adata_X.shape)
     proba_preds = classifier.predict_proba(adata_X)
-    df_probs = pandas.DataFrame(np.column_stack(list(zip(*proba_preds))))
+    df_probs = pandas.DataFrame(numpy.column_stack(list(zip(*proba_preds))))
     corr = make_correspondence(classifier)
     for index in df_probs.columns.values:
         celltype = corr[index]
