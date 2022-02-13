@@ -129,6 +129,17 @@ else:
 # Load converted genes from mouse to human (if necessary) #
 ###########################################################
 
+def convert_ids(adata, df_genes):
+    var_names = adata.var_names.to_list()
+    df_genes = df_genes[df_genes['external_gene_name'].isin(var_names)]
+    df_genes = df_genes.set_index('external_gene_name')
+    gene_mapping = df_genes['hsapiens_homolog_associated_gene_name'].to_dict() # mouse gene name to human gene name
+    tokeep = df_genes.index.to_list()
+    adata = adata[:, tokeep]
+    adata.var['human_ids'] = adata.var_names.map(gene_mapping)
+    adata.var_names = adata.var['human_ids']
+    return adata
+
 if not args.converted_genes is None: 
     print('''
     ######################################
@@ -139,30 +150,14 @@ if not args.converted_genes is None:
     df_genes = df_genes.dropna()
     df_genes = df_genes.drop_duplicates(['hsapiens_homolog_associated_gene_name'])
     df_genes = df_genes.drop_duplicates(['external_gene_name'])
-    dict_genes = pandas.Series(df_genes['hsapiens_homolog_associated_gene_name'].values, index=df_genes['external_gene_name']).to_dict()
-    print(len(dict_genes))
+
     if not args.is_mouse is None: 
         if args.adata_from[0] == args.is_mouse[0]:
             print('\nThe mouse dataset is the one you wish to transfer labels FROM\n')
-            var_names = adata_from.var_names.to_list()
-            df_genes = df_genes[df_genes['external_gene_name'].isin(var_names)]
-            df_genes = df_genes.set_index('external_gene_name')
-            gene_mapping = df_genes['hsapiens_homolog_associated_gene_name'].to_dict() # mouse gene name to human gene name
-            tokeep = df_genes.index.to_list()
-            adata_from = adata_from[:, tokeep]
-            adata_from.var['human_ids'] = adata_from.var_names.map(gene_mapping)
-            adata_from.var_names = adata_from.var['human_ids']
-            # adata_from.make_var_names_unique()
+            adata_from = convert_ids(adata_from, df_genes)
         elif args.adata_to[0] == args.is_mouse[0]:
             print('\nThe mouse dataset is the one you wish to transfer labels TO\n')
-            var_names = adata_to.var_names.to_list()
-            df_genes = df_genes[df_genes['external_gene_name'].isin(var_names)]
-            df_genes = df_genes.set_index('external_gene_name')
-            gene_mapping = df_genes['hsapiens_homolog_associated_gene_name'].to_dict() # mouse gene name to human gene name
-            tokeep = df_genes.index.to_list()
-            adata_to = adata_to[:, tokeep]
-            adata_to.var['human_ids'] = adata_to.var_names.map(gene_mapping)
-            adata_to.var_names = adata_to.var['human_ids']
+            adata_to = convert_ids(adata_to, df_genes)
         else: 
             print('The mouse dataset does not coincide with either the dataset you wish to transfer labels FROM nor TO')
     else: 
