@@ -67,7 +67,63 @@ def per_gene_analysis(adata):
     # Plot the variance ratio
     sc.pl.pca_variance_ratio(bdata, log=True)
 
-    return bdata
+    # Compute a neighborhood graph of observations
+    sc.pp.neighbors(bdata, n_pcs=20)
+    # Embed the neighborhood graph using UMAP
+    sc.tl.umap(bdata)
+    # Cluster GENES into subgroups using leiden: resolution < 1 to find less clusters
+    sc.tl.leiden(bdata, resolution=0.5)
+
+    # Locate ccs cluster
+    bdata.obs['known_cyclers'] = [i in ['CDK1','MKI67','CCNB2','PCNA'] for i in bdata.obs_names]
+    bdata.obs['known_cyclers'] = bdata.obs['known_cyclers'].astype(int)
+    sc.pl.umap(bdata, color=['known_cyclers', 'leiden'], color_map='OrRd')
+    print(bdata.obs.loc[[i in ['CDK1','MKI67','CCNB2','PCNA'] for i in bdata.obs_names],'leiden'])
+    
+    if 'CDK1' in bdata.obs_names:
+        ccgs_cl = bdata.obs.loc['CDK1',['leiden']][0]
+        print("Cell cycle genes cluster is "+ccgs_cl)
+    
+         # Add unstructured dict-like annotation for ccgs
+        adata.uns['ccgs'] = list(bdata.obs[bdata.obs['leiden']==ccgs_cl].index)
+    
+        # Remove cc genes
+        print('Total number of genes before ccg filter: {:d}'.format(adata.n_vars))
+        adata = adata[:,[i not in adata.uns['ccgs'] for i in adata.var_names]]
+        print('Total number of genes after ccg filter: {:d}'.format(adata.n_vars))
+    else: 
+        print("WARNING: CDK1 not present in bdata.obs_names, so not removing cell cycle genes")
+
+    return adata
+
+# Function to normalize and log-transform 
+def normalize_log_transform(adata):
+    sc.pp.normalize_per_cell(adata, counts_per_cell_after=1e4)
+    sc.pp.log1p(adata)
+    return adata
+
+# Function to filter HVGs and compute PCA on them 
+def hvgs_pca_umap(adata):
+    bdata = adata.copy()
+    sc.pp.highly_variable_genes(bdata, min_mean=0.0125, max_mean=3, min_disp=0.5)
+    for col in ['highly_variable','means', 'dispersions', 'dispersions_norm']:
+        adata.var[col] = bdata.var[col]
+    bdata = bdata[:, bdata.var['highly_variable']]
+    sc.pp.scale(bdata, max_value=10)
+    sc.tl.pca(bdata, svd_solver='arpack', n_comps=50)
+    #fill NaNs with False so that subsetting to HVGs is possible
+    adata.var['highly_variable'].fillna(value=False, inplace=True)
+    adata.obsm['X_pca'] = bdata.obsm['X_pca'].copy()
+    adata.uns['pca'] = bdata.uns['pca'].copy()
+    adata.varm['PCs'] = np.zeros(shape=(adata.n_vars, 50))
+    adata.varm['PCs'][adata.var['highly_variable']] = bdata.varm['PCs']
+    sc.pl.pca_variance_ratio(adata, log=True)
+
+    # Decide number of PCs to compute neighbourhood graph 
+    n_pcs = int(input('Desired number of PCs to consider for neighbourhood graph:'))
+    sc.pp.neighbors(adata, n_pcs = n_pcs)
+    sc.tl.umap(adata)
+    return adata
 
 # Benjamini-Hochberg and Bonferroni FDR helper functions.
 def bh(pvalues):
@@ -107,4 +163,21 @@ def bonf(pvalues):
     new_pvalues[new_pvalues>1] = 1
     return new_pvalues
 
+# Function to load doublet scores computed with scrublet 
+def load_scrublet(adata, samples, scrublet_dir): 
+    scorenames = ['scrublet_score','scrublet_cluster_score','zscore','bh_pval','bonf_pval']
 
+    scrdf = []
+    for sample in samples:
+        scrdf.append(pd.read_csv(scrublet_dir + sample + '.csv', header=0, index_col=0))
+    scrdf = pd.concat(scrdf)
+    scrdf.index = [i.replace('-1', '') for i in scrdf.index]
+    for score in scorenames:
+        adata.obs[score] = scrdf[score]
+    adata.obs['is_doublet'] = adata.obs['bonf_pval'] < 0.01
+
+    # doublets %
+    print("Percentage of doublets in dataset: {}".format(adata.obs['is_doublet'].sum() / adata.shape[0]))
+
+    # Fix is_doublet data type to enable plotting correctly 
+    adata.obs['is_doublet'] = adata.obs['is_doublet'].astype(int)
