@@ -5,17 +5,27 @@
 ###################
 
 # Required packages
-packages <- c("Seurat", "SeuratDisk", "argparse")
+cran_packages <- c("Seurat", "argparse")
 
 # Install packages not yet installed
-installed_packages <- packages %in% rownames(installed.packages())
+installed_packages <- cran_packages %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
   install.packages(packages[!installed_packages])
 }
 
 # Packages loading
-invisible(lapply(packages, library, character.only = TRUE))
+invisible(lapply(cran_packages, library, character.only = TRUE))
 
+# SeuratDisk (not currently available on CRAN)
+if ("SeuratDisk" %in% rownames(installed.packages())) {
+	library("SeuratDisk")
+} else {
+	if (!requireNamespace("remotes", quietly = TRUE)) {
+  	install.packages("remotes")
+	}
+	remotes::install_github("mojaveazure/seurat-disk")
+	library("SeuratDisk")
+}
 
 ##################################
 # Define command line parameters #
